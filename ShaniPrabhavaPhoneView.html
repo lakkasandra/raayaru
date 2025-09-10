@@ -91,7 +91,7 @@
     <div id="book-container">
         <button id="prev" class="nav-button">&#8592;</button>
         <div id="book-view">
-            <img id="page-image" src="./images/shaniprabhaava/Page0001.jpg" alt="Page Image">
+            <img id="page-image" src="./images/shaniprabhaava/page0001.jpg" alt="Page Image">
         </div>
         <button id="next" class="nav-button">&#8594;</button>
     </div>
@@ -103,7 +103,7 @@
 
             function updatePage() {
                 const pageStr = String(currentPage).padStart(4, '0');
-                $('#page-image').attr('src', `./images/shaniprabhaava/Page${pageStr}.jpg`);
+                $('#page-image').attr('src', `./images/shaniprabhaava/page${pageStr}.jpg`);
                 $('#tab span').text(`Page ${currentPage}`);
 
                 // Disable prev/next at edges
