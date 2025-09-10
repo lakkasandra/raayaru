@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Viewer with Side Navigation</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            text-align: center;
+        }
+
+        #tab {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        #tab span {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        #tab button {
+            font-size: 1.5em;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        #book-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #book-view img {
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            object-fit: contain;
+        }
+
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 123, 255, 0.7);
+            border: none;
+            color: white;
+            font-size: 2em;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #prev {
+            left: 10px;
+        }
+
+        #next {
+            right: 10px;
+        }
+
+        .nav-button:disabled {
+            background-color: rgba(150, 150, 150, 0.7);
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="tab">
+        <button onclick="window.close()" class="closeBtn" id="closeBtn" title="Close viewer">Close ✕</button>
+    </div>
+
+    <div id="book-container">
+        <button id="prev" class="nav-button">&#8592;</button>
+        <div id="book-view">
+            <img id="page-image" src="./images/shaniprabhaava/Page0001.jpg" alt="Page Image">
+        </div>
+        <button id="next" class="nav-button">&#8594;</button>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            let currentPage = 1;
+            const totalPages = 111;
+
+            function updatePage() {
+                const pageStr = String(currentPage).padStart(4, '0');
+                $('#page-image').attr('src', `./images/shaniprabhaava/Page${pageStr}.jpg`);
+                $('#tab span').text(`Page ${currentPage}`);
+
+                // Disable prev/next at edges
+                $('#prev').prop('disabled', currentPage === 1);
+                $('#next').prop('disabled', currentPage === totalPages);
+            }
+
+            $('#next').click(function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    updatePage();
+                }
+            });
+
+            $('#prev').click(function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    updatePage();
+                }
+            });
+
+            $('#close-tab').click(function () {
+                $('#book-container').hide();
+                $('#tab').hide();
+            });
+
+            updatePage(); // Initialize
+        });
+    </script>
+
+</body>
+
+</html>
