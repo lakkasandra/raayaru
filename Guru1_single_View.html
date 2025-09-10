@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jnaana Veda Guru 1</title>
+  <style>
+    :root{
+      --bg:#0b0f14; /* deep slate */
+      --fg:#e8eef6;
+      --muted:#98a2b3;
+      --accent:#7dd3fc;
+      --btn:#111827;
+      --btnHover:#1f2937;
+    }
+
+    html,body{height:100%;}
+    body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";}
+
+    /* Overlay container */
+    .overlay{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto;backdrop-filter: blur(6px);background:linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.75));z-index:50}
+
+    /* Top bar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid #1f2937;background:rgba(13,18,25,.6)}
+    .brand{display:flex;align-items:center;gap:.6rem}
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+    .title{font-weight:600;letter-spacing:.2px}
+
+    /* Close button */
+    .closeBtn{appearance:none;border:1px solid #263042;background:var(--btn);color:var(--fg);padding:.55rem .8rem;border-radius:12px;cursor:pointer;font-weight:600;transition:.2s transform,.2s background;}
+    .closeBtn:hover{background:var(--btnHover);transform:translateY(-1px)}
+
+    /* Viewer area */
+    .viewerWrap{display:grid;grid-template-columns:72px 1fr 72px;gap:1rem;align-items:center;padding:1rem;height:100%;}
+
+    .viewer{position:relative;height:100%;display:grid;place-items:center;perspective:1400px;}
+
+    /* Card that holds the page image */
+    .page3d{position:relative;width:min(82vw, min(1024px, calc(90vh*0.707)));/* keep near A4 ratio */
+            aspect-ratio:0.707/1; /* ~A-series page */
+            transform-style:preserve-3d;transition:transform .2s ease, box-shadow .2s ease; border-radius:16px;overflow:hidden;background:radial-gradient(1200px 600px at 50% 20%, #1d283a, #0b0f14); box-shadow:0 30px 70px rgba(0,0,0,.45)}
+
+    .page3d img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#0f1722}
+
+    /* Page rim for subtle thickness */
+    .page3d::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 30px rgba(0,0,0,.35)}
+
+    /* Navigation buttons */
+    .navBtn{appearance:none;border:none;background:transparent;color:var(--fg);cursor:pointer;font-size:28px;width:56px;height:56px;border-radius:999px;display:grid;place-items:center;transition:transform .1s ease, background .2s ease, opacity .2s;opacity:.9;border:1px solid #263042}
+    .navBtn:hover{transform:translateY(-1px);background:#0f1722}
+    .navBtn:disabled{opacity:.25;cursor:not-allowed}
+
+    /* Bottom bar */
+    .bottombar{display:flex;align-items:center;justify-content:center;gap:.8rem;padding:.75rem 1rem;border-top:1px solid #1f2937;background:rgba(13,18,25,.6)}
+
+    .input{background:#0f1722;border:1px solid #233047;color:var(--fg);border-radius:10px;padding:.5rem .7rem;width:5.5rem}
+    .goBtn{appearance:none;border:1px solid #263042;background:var(--btn);color:var(--fg);padding:.55rem .8rem;border-radius:12px;cursor:pointer;font-weight:600;transition:.2s transform,.2s background}
+    .goBtn:hover{background:var(--btnHover);transform:translateY(-1px)}
+
+    .counter{color:var(--muted);font-feature-settings:"tnum" 1, "lnum" 1;}
+    .hint{color:var(--muted);opacity:.85}
+
+    /* Little help tooltip */
+    details{margin-left:auto}
+    summary{cursor:pointer;color:var(--muted)}
+    .help{margin-top:.5rem;color:var(--muted);font-size:.9rem}
+
+    /* Hide focus outlines except keyboard */
+    :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:10px}
+
+    @media (max-width: 640px){
+      .viewerWrap{grid-template-columns:48px 1fr 48px}
+      .navBtn{width:44px;height:44px;font-size:22px}
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span><span class="title">Jnaana Veda Guru 1</span></div>
+      <button onclick="window.close()" class="closeBtn" id="closeBtn" title="Close viewer (Esc)">Close ✕</button>
+    </div>
+
+    <div class="viewerWrap">
+      <button class="navBtn" id="prevBtn" title="Previous (←)">⟨</button>
+      <div class="viewer" id="viewer">
+        <div class="page3d" id="page3d" aria-live="polite">
+          <img id="pageImg" alt="Page image" />
+        </div>
+      </div>
+      <button class="navBtn" id="nextBtn" title="Next (→)">⟩</button>
+    </div>
+
+    <div class="bottombar">
+      <span class="counter" id="counter">Page 1 / 48</span>
+      <input class="input" id="jumpInput" type="number" min="1" max="48" placeholder="#" />
+      <button class="goBtn" id="goBtn">Go</button>
+      <details>
+        <summary>Shortcuts</summary>
+        <div class="help">Use ←/→ to navigate, Home/End to jump, type a page #, or drag your mouse / tilt your finger over the page for a subtle 3D effect.</div>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    // ======= CONFIG =======
+    const TOTAL_PAGES = 48;            // number of pages
+    const BASE_PATH   = './images/Guru1/';           // folder containing the images
+    const FILENAME    = n => `page${String(n).padStart(4,'0')}`; // page0001
+    const EXTENSIONS  = ['.jpg', '.jpeg', '.png', '.webp', '.jog']; // try in this order ('.jog' as fallback typo)
+
+    // Optional: start page from URL like ?p=12
+    const urlParams = new URLSearchParams(location.search);
+    let current = Math.min(Math.max(parseInt(urlParams.get('p')||'1',10),1), TOTAL_PAGES);
+
+    // Elements
+    const overlay   = document.getElementById('overlay');
+    const page3d    = document.getElementById('page3d');
+    const pageImg   = document.getElementById('pageImg');
+    const counter   = document.getElementById('counter');
+    const prevBtn   = document.getElementById('prevBtn');
+    const nextBtn   = document.getElementById('nextBtn');
+    const jumpInput = document.getElementById('jumpInput');
+    const goBtn     = document.getElementById('goBtn');
+    const closeBtn  = document.getElementById('closeBtn');
+
+    // 3D tilt interaction
+    const MAX_TILT_X = 8;   // deg up/down
+    const MAX_TILT_Y = 16;  // deg left/right
+
+    function setTilt(ev){
+      const rect = page3d.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const x = (ev.clientX ?? (ev.touches && ev.touches[0]?.clientX) ?? cx) - cx;
+      const y = (ev.clientY ?? (ev.touches && ev.touches[0]?.clientY) ?? cy) - cy;
+      const rx = - (y / (rect.height/2)) * MAX_TILT_X; // rotateX: up/down
+      const ry =   (x / (rect.width/2))  * MAX_TILT_Y; // rotateY: left/right
+      page3d.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    }
+    function resetTilt(){ page3d.style.transform = 'rotateX(0deg) rotateY(0deg)'; }
+
+    page3d.addEventListener('mousemove', setTilt);
+    page3d.addEventListener('mouseleave', resetTilt);
+    page3d.addEventListener('touchstart', setTilt, {passive:true});
+    page3d.addEventListener('touchmove', setTilt, {passive:true});
+    page3d.addEventListener('touchend', resetTilt, {passive:true});
+
+    // Build a resilient loader that tries different extensions until one works
+    function setImageSource(n){
+      return new Promise(resolve => {
+        const base = BASE_PATH + FILENAME(n);
+        let i = 0;
+        function tryNext(){
+          if(i >= EXTENSIONS.length){ resolve(false); return; }
+          const candidate = base + EXTENSIONS[i++];
+          const img = new Image();
+          img.onload = () => { pageImg.src = candidate; resolve(true); };
+          img.onerror = tryNext;
+          img.src = candidate + `?v=${Date.now()}`; // bust cache while developing
+        }
+        tryNext();
+      });
+    }
+
+    function updateCounter(){
+      counter.textContent = `Page ${String(current).padStart(2,'0')} / ${TOTAL_PAGES}`;
+      prevBtn.disabled = current === 1;
+      nextBtn.disabled = current === TOTAL_PAGES;
+      history.replaceState(null, '', `?p=${current}`);
+    }
+
+    async function show(n){
+      current = Math.min(Math.max(n,1), TOTAL_PAGES);
+      page3d.style.transition = 'transform .25s ease, box-shadow .25s ease';
+      page3d.style.transform = 'translateZ(0) rotateY(-10deg)';
+      const ok = await setImageSource(current);
+      if(!ok){
+        pageImg.alt = `Missing image for ${FILENAME(current)}`;
+      }
+      updateCounter();
+      // brief pop-in effect
+      requestAnimationFrame(() => {
+        page3d.style.transform = 'translateZ(24px) rotateY(0deg)';
+        setTimeout(()=> page3d.style.transform = '', 140);
+      });
+      // Preload neighbors
+      preload(current+1);
+      preload(current-1);
+    }
+
+    function preload(n){
+      if(n<1 || n> TOTAL_PAGES) return;
+      const base = BASE_PATH + FILENAME(n);
+      for(const ext of EXTENSIONS){
+        const img = new Image();
+        img.src = base + ext;
+      }
+    }
+
+    // Navigation
+    prevBtn.addEventListener('click', ()=> show(current-1));
+    nextBtn.addEventListener('click', ()=> show(current+1));
+    goBtn.addEventListener('click', ()=> { const v= parseInt(jumpInput.value,10); if(!Number.isNaN(v)) show(v);});
+    jumpInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ goBtn.click(); }});
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e)=>{
+      if(e.key==='ArrowLeft')  { e.preventDefault(); if(current>1) show(current-1); }
+      if(e.key==='ArrowRight') { e.preventDefault(); if(current<TOTAL_PAGES) show(current+1); }
+      if(e.key==='Home')       { e.preventDefault(); show(1); }
+      if(e.key==='End')        { e.preventDefault(); show(TOTAL_PAGES); }
+      if(e.key==='Escape')     { e.preventDefault(); closeOverlay(); }
+    });
+
+    // Close button behavior (hides overlay)
+    function closeOverlay(){ overlay.style.display='none'; }
+    closeBtn.addEventListener('click', closeOverlay);
+
+    // Initialize
+    show(current);
+  </script>
+</body>
+</html>

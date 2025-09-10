@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jnaana Veda - Dhyaana 2</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #151924;
+      --ink: #e6e7ea;
+      --accent: #4bb3fd;
+      --shadow: rgba(0,0,0,.45);
+      --page-shadow: rgba(0,0,0,.25);
+      --maxw: 1200px; /* max width of the book spread */
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: radial-gradient(1200px 700px at 50% -10%, #1a2030 0%, var(--bg) 60%);
+      color: var(--ink); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100%;
+    }
+
+    header, footer {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .6rem .9rem; background: linear-gradient(180deg, #171c28, #121622);
+      border-bottom: 1px solid #20263a;
+      box-shadow: 0 2px 8px var(--shadow);
+      z-index: 5;
+    }
+    footer { border-top: 1px solid #20263a; border-bottom: none; box-shadow: 0 -4px 10px var(--shadow); }
+
+    h1 { font-size: 14px; margin: 0; font-weight: 600; letter-spacing: .2px; opacity: .9; }
+    .spacer { flex: 1; }
+
+    .book-wrap {
+      display: grid; place-items: center; padding: 10px; overflow: hidden;
+    }
+
+    .book {
+      position: relative;
+      width: min(70%, var(--maxw));
+	  height: min(70%, var(--maxh));
+      aspect-ratio: 3 / 2; /* widescreen-ish; adjusts with viewport */
+      background: radial-gradient(800px 400px at 50% 0%, #1a2030 0%, #0f1115 65%);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px var(--shadow), inset 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+    }
+
+    /* Spread area (two pages) */
+    .spread {
+      position: relative; inset: 0;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0; perspective: 2000px; transform-style: preserve-3d;
+    }
+
+    .page {
+      position: relative;
+      overflow: hidden;
+      background: #0e0f14;
+    }
+
+    .page img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    /* Center gutter / spine */
+    .gutter { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(255,255,255,.06); box-shadow: 0 0 20px rgba(0,0,0,.6); z-index: 1; }
+
+    /* Interactive hotspots for clicking/tapping left/right */
+    .hotspot { position: absolute; top: 0; bottom: 0; width: 22%; z-index: 3; }
+    .hotspot.left { left: 0; }
+    .hotspot.right { right: 0; }
+    .hotspot:hover { cursor: pointer; }
+
+    /* Prev/Next buttons */
+    .controls {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; pointer-events: none; padding: 10px;
+    }
+    .btn {
+      pointer-events: auto;
+      user-select: none;
+      background: #1b2233; color: var(--ink);
+      border: 1px solid #2a3550; border-radius: 12px;
+      padding: .55rem .8rem; display: inline-flex; align-items: center; gap: .5rem;
+      box-shadow: 0 8px 24px var(--shadow);
+      transition: transform .12s ease, background .2s ease, border-color .2s ease;
+      font-weight: 600; opacity: .95;
+    }
+    .btn[disabled] { opacity: .35; pointer-events: none; }
+    .btn:active { transform: translateY(1px); }
+
+    /* Page turn animation overlay */
+    .turn {
+      position: absolute; top: 0; bottom: 0; width: 50%;
+      transform-origin: left center; right: 0; left: 50%;
+      background: #0d0f15; z-index: 2; backface-visibility: hidden;
+      display: none; /* only shown during turn */
+      box-shadow: -20px 0 40px var(--page-shadow);
+    }
+    .turn img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .turn.shown { display: block; }
+
+    /* Range and misc controls */
+    .toolbar { display: flex; align-items: center; gap: .6rem; width: 100%; }
+    .toolbar input[type="range"] { width: clamp(160px, 40vw, 500px); }
+    .small { font-size: 12px; opacity: .75; }
+
+    /* Zoom */
+    .zoomable { cursor: zoom-in; }
+    .zoomed { cursor: zoom-out; }
+
+    /* Help tooltip */
+    .kbd { background: #0e1422; border: 1px solid #1e2740; padding: .15rem .3rem; border-radius: 6px; font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .book { aspect-ratio: 3 / 2.2; }
+      .hotspot { width: 28%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Flipbook viewer">
+    <header>
+      <h1>Flipbook Viewer</h1>
+      <div class="spacer"></div>
+      <div class="small">Tip: <span class="kbd">←</span>/<span class="kbd">→</span> or click page edges • Double‑click to zoom</div>
+    </header>
+
+    <div class="book-wrap">
+      <div class="book" id="book">
+        <div class="spread" id="spread" aria-live="polite" aria-atomic="true">
+          <div class="page left" id="leftPage" aria-label="Left page"></div>
+          <div class="page right" id="rightPage" aria-label="Right page"></div>
+          <div class="gutter" aria-hidden="true"></div>
+          <div class="turn" id="turnOverlay"><img alt="Turning page" /></div>
+          <div class="controls" aria-hidden="true">
+            <button class="btn" id="prevBtn" title="Previous (←)">⟵ Prev</button>
+            <button class="btn" id="nextBtn" title="Next (→)">Next ⟶</button>
+          </div>
+          <div class="hotspot left" id="hotspotLeft" aria-hidden="true"></div>
+          <div class="hotspot right" id="hotspotRight" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="toolbar">
+        <label class="small">Go to page:</label>
+        <input id="pageSlider" type="range" min="1" max="50" value="1" />
+        <div id="pageLabel" class="small">Page 1–2 / 50</div>
+        <div class="spacer"></div>
+        <button class="btn" id="fitBtn" title="Toggle fit">Fit: Width</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // =========================
+    // CONFIG — edit to match your files
+    // =========================
+    const PAGE_COUNT = 50; // total images
+    const LEADING_ZEROS = 4; // file numbers like 001, 002, ... 100
+    const BASE_PATH = "./images/Dhyaana2/"; // folder where images live
+    const EXT = "jpg"; // file extension (jpg/png/webp)
+    // If your files are named differently, change imagePath() below to match.
+
+    function imagePath(n) {
+      const num = String(n).padStart(LEADING_ZEROS, '0');
+      return `${BASE_PATH}/page${num}.${EXT}`;
+    }
+
+    // State
+    let leftIndex = 1; // left page number (1-based)
+    let zoomed = false;
+    let fitMode = 'width'; // or 'height'
+
+    // Elements
+    const leftPage = document.getElementById('leftPage');
+    const rightPage = document.getElementById('rightPage');
+    const turnOverlay = document.getElementById('turnOverlay');
+    const turnImg = turnOverlay.querySelector('img');
+    const pageSlider = document.getElementById('pageSlider');
+    const pageLabel = document.getElementById('pageLabel');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const fitBtn = document.getElementById('fitBtn');
+    const hotspotLeft = document.getElementById('hotspotLeft');
+    const hotspotRight = document.getElementById('hotspotRight');
+    const spread = document.getElementById('spread');
+
+    // Helpers
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+    function setImage(el, src){
+      // Lazily create <img> if missing; swap src otherwise
+      let img = el.querySelector('img');
+      if(!img){
+        img = new Image();
+        img.alt = 'Page image';
+        img.decoding = 'async';
+        img.loading = 'lazy';
+        img.className = 'zoomable';
+        el.appendChild(img);
+      }
+      // Fit mode via CSS
+      img.style.objectFit = 'contain';
+      img.style.width = '100%';
+      img.style.height = '98%';
+      img.src = src;
+      return img;
+    }
+
+    function updateSpread(index){
+      // index is the desired left page number (1-based, odd)
+      leftIndex = clamp(index - (index % 2 === 0 ? 1 : 0), 1, PAGE_COUNT - 1);
+      const rightIndex = clamp(leftIndex + 1, 1, PAGE_COUNT);
+
+      setImage(leftPage, imagePath(leftIndex));
+      setImage(rightPage, imagePath(rightIndex));
+
+      // Preload neighbors
+      preload(leftIndex - 1);
+      preload(rightIndex + 1);
+
+      updateUI();
+    }
+
+    function preload(n){
+      if(n < 1 || n > PAGE_COUNT) return;
+      const img = new Image();
+      img.src = imagePath(n);
+    }
+
+    function updateUI(){
+      const rightIndex = clamp(leftIndex + 1, 1, PAGE_COUNT);
+      pageSlider.value = String(leftIndex);
+      pageSlider.max = String(PAGE_COUNT - (PAGE_COUNT % 2));
+      pageLabel.textContent = `Page ${leftIndex}–${rightIndex} / ${PAGE_COUNT}`;
+      prevBtn.disabled = leftIndex <= 1;
+      nextBtn.disabled = rightIndex >= PAGE_COUNT;
+    }
+
+    function animateTurn(forward=true){
+      // Simple page-turn illusion using an overlay that rotates on Y axis
+      const fromIndex = forward ? leftIndex + 1 : leftIndex; // the visible page that "turns"
+      if(fromIndex < 1 || fromIndex > PAGE_COUNT) return;
+      turnImg.src = imagePath(fromIndex);
+      turnOverlay.classList.add('shown');
+      turnOverlay.style.transformOrigin = forward ? 'left center' : 'right center';
+      turnOverlay.style.left = forward ? '50%' : '0%';
+      turnOverlay.style.right = forward ? '0%' : '50%';
+
+      const start = performance.now();
+      const D = 350; // ms
+
+      function frame(t){
+        const k = clamp((t - start) / D, 0, 1);
+        const e = 1 - Math.pow(1 - k, 3); // easeOutCubic
+        const angle = forward ? (-180 * e) : (180 * e);
+        turnOverlay.style.transform = `rotateY(${angle}deg)`;
+        turnOverlay.style.boxShadow = forward ? `-20px 0 40px rgba(0,0,0,${0.25*(1-k)+0.05})` : `20px 0 40px rgba(0,0,0,${0.25*(1-k)+0.05})`;
+        if(k < 1) requestAnimationFrame(frame); else {
+          turnOverlay.classList.remove('shown');
+          turnOverlay.style.transform = 'rotateY(0)';
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function goNext(){
+      const rightIndex = leftIndex + 1;
+      if(rightIndex >= PAGE_COUNT) return;
+      animateTurn(true);
+      updateSpread(leftIndex + 2);
+    }
+
+    function goPrev(){
+      if(leftIndex <= 1) return;
+      animateTurn(false);
+      updateSpread(leftIndex - 2);
+    }
+
+    // Zoom (double‑click/tap)
+    function toggleZoom(){
+      zoomed = !zoomed;
+      const imgs = [leftPage.querySelector('img'), rightPage.querySelector('img')].filter(Boolean);
+      imgs.forEach(img => {
+        img.classList.toggle('zoomed', zoomed);
+        img.style.objectFit = zoomed ? 'contain' : 'contain';
+        img.style.transform = zoomed ? 'scale(1.4)' : 'scale(1)';
+        img.style.transition = 'transform .2s ease';
+      });
+    }
+
+    // Fit mode toggle
+    function applyFit(){
+      const imgs = [leftPage.querySelector('img'), rightPage.querySelector('img')].filter(Boolean);
+      imgs.forEach(img => {
+        if(fitMode === 'width'){
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'contain';
+        } else {
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'contain';
+        }
+      });
+      fitBtn.textContent = `Fit: ${fitMode === 'width' ? 'Width' : 'Height'}`;
+    }
+
+    // Events
+    nextBtn.addEventListener('click', goNext);
+    prevBtn.addEventListener('click', goPrev);
+    hotspotRight.addEventListener('click', goNext);
+    hotspotLeft.addEventListener('click', goPrev);
+
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'ArrowRight') goNext();
+      else if(e.key === 'ArrowLeft') goPrev();
+    });
+
+    pageSlider.addEventListener('input', (e) => {
+      const target = parseInt(e.target.value, 10) || 1;
+      const left = target % 2 === 0 ? target - 1 : target;
+      updateSpread(left);
+    });
+
+    // Double click / double tap zoom
+    [leftPage, rightPage].forEach(el => {
+      el.addEventListener('dblclick', toggleZoom);
+      let lastTap = 0;
+      el.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if(now - lastTap < 300) toggleZoom();
+        lastTap = now;
+      });
+    });
+
+    // Fit toggle
+    fitBtn.addEventListener('click', () => {
+      fitMode = (fitMode === 'width') ? 'height' : 'width';
+      applyFit();
+    });
+
+    // Initial load
+    updateSpread(1);
+    applyFit();
+  </script>
+
+  <!--
+  =============================
+  HOW TO USE
+  =============================
+  1) Put your 100 images in a folder named `images` next to this HTML file.
+     Name them page001.jpg, page002.jpg, ..., page100.jpg (or tweak CONFIG).
+  2) Open this HTML in a browser. Use ← / → or click the page edges to turn.
+  3) Use the slider or the Fit toggle in the footer. Double‑click to zoom.
+
+  TIPS
+  • Change PAGE_COUNT, BASE_PATH, EXT, and LEADING_ZEROS at the top if needed.
+  • If your first image is a cover and you want it alone, set PAGE_COUNT and
+    then start at updateSpread(2) and adjust layout logic; or keep as spread.
+  • For very large images, consider converting to .webp to save memory.
+  -->
+</body>
+</html>
