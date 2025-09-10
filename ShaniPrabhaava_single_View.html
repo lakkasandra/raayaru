@@ -111,7 +111,7 @@
 
     // Optional: start page from URL like ?p=12
     const urlParams = new URLSearchParams(location.search);
-    let current = Math.min(Math.max(parseInt(urlParams.get('p')||'1',10),1), TOTAL_PAGES);
+    let current = Math.min(Math.max(parseInt(urlParams.get('p')||'1',11),1), TOTAL_PAGES);
 
     // Elements
     const overlay   = document.getElementById('overlay');
