@@ -86,6 +86,13 @@
 
     <div id="tab">
         <button onclick="window.close()" class="closeBtn" id="closeBtn" title="Close viewer">Close ✕</button>
+				<span id="page-label">Page 1</span>
+
+		<div id="jump-controls">
+		  <input type="range" id="page-slider" min="1" max="48" value="1">
+		  <input type="number" id="page-input" min="1" max="48" value="1">
+		  <button id="jump-btn">Go</button>
+		</div>
     </div>
 
     <div id="book-container">
@@ -129,7 +136,24 @@
                 $('#book-container').hide();
                 $('#tab').hide();
             });
+$('#page-slider').on('input', function () {
+				currentPage = parseInt($(this).val());
+				updatePage();
+			  });
 
+			  $('#jump-btn').click(() => {
+				const val = parseInt($('#page-input').val());
+				if (val >= 1 && val <= totalPages) {
+				  currentPage = val;
+				  updatePage();
+				} else {
+				  alert(`Enter a valid page number (1–${totalPages})`);
+				}
+			  });
+
+			  $('#page-input').on('keypress', function (e) {
+				if (e.which === 13) $('#jump-btn').click(); // Press Enter to jump
+			  });
             updatePage(); // Initialize
         });
     </script>
